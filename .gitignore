@@ -1,13 +1,10 @@
+# Maven output and generated documentation
 target/
+/site/
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -36,3 +33,10 @@ build/
 
 ### Mac OS ###
 .DS_Store
+Thumbs.db
+
+# Local configuration and runtime files
+.env
+.env.*
+!.env.example
+*.log

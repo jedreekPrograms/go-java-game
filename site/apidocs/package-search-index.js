@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html","k":"18"},{"l":"pl.edu.go.client"},{"l":"pl.edu.go.client.networkInterfaces"},{"l":"pl.edu.go.model"},{"l":"pl.edu.go.server"},{"l":"pl.edu.go.server.commandInterfaces"},{"l":"pl.edu.go.server.networkInterfaces"}];updateSearchResults();
