@@ -53,14 +53,10 @@
         </dependency>
 
         <dependency>
-        <groupId>org.openjfx</groupId>
-        <artifactId>javafx-controls</artifactId>
-        <version>21</version> </dependency>
-        <dependency>
-        <groupId>org.openjfx</groupId>
-        <artifactId>javafx-fxml</artifactId>
-        <version>21</version>
-    </dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
         <!-- Spring Boot core -->
         <dependency>
@@ -92,14 +88,6 @@
             <id>server</id>
             <properties>
                 <exec.mainClass>pl.edu.go.server.MatchmakingServer</exec.mainClass>
-            </properties>
-        </profile>
-
-        <!-- CLIENT -->
-        <profile>
-            <id>client</id>
-            <properties>
-                <exec.mainClass>pl.edu.go.client.GoClient</exec.mainClass>
             </properties>
         </profile>
 
@@ -156,19 +144,6 @@
 
                 <configuration>
                     <mainClass>${exec.mainClass}</mainClass>
-
-                    <!-- ARGUMENTY PROGRAMU -->
-                    <arguments>
-                        <argument>5000</argument>
-                    </arguments>
-
-                    <!-- OPCJE JVM (JavaFX) -->
-                    <commandlineArgs>
-                        --module-path
-                        C:/Users/jedre/Downloads/openjfx-21_windows-x64_bin-sdk/javafx-sdk-21/lib
-                        --add-modules
-                        javafx.controls,javafx.fxml
-                    </commandlineArgs>
                 </configuration>
             </plugin>
 
