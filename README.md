@@ -1,29 +1,106 @@
-# Gra w GO
+# Gra w Go
 
-Prosty program napisany w technologii klient-serwer w języku Java. Obsługuje większość zasady gry Go takich jak kładzenie kamieni,obsługa łańcuchów, duszenia, zapobiegania ko i samobójstw. Obecna rozgrywka odbywa sie na planszy 9 x 9. Obecna rekompensata za granie białymi(komi) wynosi 6.5 pkt.
+Gra Go w architekturze klient–serwer, napisana w Javie 21. Klient JavaFX
+komunikuje się z serwerem przez TCP. Serwer kojarzy graczy w pary, obsługuje
+wiele partii jednocześnie i pozwala rozpocząć grę z botem.
 
-## Instrukcja gry
+## Możliwości
 
-Gracze grajac do dyspozycji mają interfejs graficzny. W trakcie własnej tury mają możliwość położyć kamień poprzez nacieśnięcie na przecięcie na planszy. Mają również możliwość spasowania lub poddania się za pomocą przysków znajdujących się u góry interfejsu. Jeśli obydwaj gracze spasują jeden po drugim gra przechodzi w tryb uzgadniania wyniku partii. Gracze mogą wtedy klikać na obecne na planszy łańcuchy oznaczając je jako martwe. Jeśli gracze uzgodnią że określili wszystkie martwe łańcuchy i są usatysfakcjonowani stanem planszy to mogą kliknąć przycisk Accept. Jeśli obydwaj gracze zaakceptują stan planszy to wynik partii jest rozstrzygany automatycznie na podstawie terytoriów, martwych łańcuchów i jeńców. Jeśli jeden z graczy nie jest zadowolony ze stanu planszy i chciałby kontynuować gre to może to zrobić klikając przycisk Continue. Po zakończonej grze gracze mają możliwość odtwarzania przebiegu parti gier zawartych w bazie danych poprzez podanie ID partii.
+- Plansza 9 × 9, naprzemienne ruchy oraz bicie połączonych grup kamieni.
+- Sprawdzanie oddechów, zakaz samobójstwa i reguła ko.
+- Pasowanie, poddanie partii i uzgadnianie martwych grup po dwóch pasach.
+- Punktacja uwzględniająca terytorium, jeńców, martwe grupy i komi 6,5 pkt.
+- Bot dobierający ruchy heurystycznie.
+- Zapis partii w MariaDB oraz odtwarzanie zapisanej gry po jej identyfikatorze.
 
-## Działanie programu
+## Wymagania
 
-Pozwala na wiele rozgrywek między dwoma klientami jednocześnie. Gracze są parowani w kolejności w jakiej połączą się z serwerem. Jeśli gracz nie chce czekać na sparowanie z innym graczem to ma możliwość rozpoczęcia partii z botem obsługiwanym na serwerze. Komunikacja odbywa się za pomocą protokołu TCP. Po wysłaniu komendy klienci otrzymuja adekwatną odpowiedź serwera wraz z zaktualizowanym stanem planszy gry.
+- JDK 21 i Maven.
+- Działająca MariaDB do uruchomienia serwera i zapisu partii.
+- Środowisko graficzne do klienta JavaFX i testów interfejsu.
+
+JavaFX jest pobierany przez Maven — nie trzeba wskazywać lokalnego katalogu SDK.
+
+## Konfiguracja bazy
+
+Domyślna konfiguracja lokalna znajduje się w
+`src/main/resources/application.properties`:
+
+| Ustawienie | Wartość lokalna |
+| --- | --- |
+| Adres | `jdbc:mariadb://localhost:3306/go_game` |
+| Użytkownik | `go_user` |
+| Hasło przykładowe | `go_pass` |
+
+Przed uruchomieniem serwera utwórz bazę `go_game` oraz użytkownika z dostępem
+do tej bazy. Hibernate tworzy lub aktualizuje tabele przy starcie.
+Konfigurację można nadpisać zmiennymi środowiskowymi Springa:
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` i
+`SPRING_DATASOURCE_PASSWORD`. Własnych haseł nie zapisuj w repozytorium.
 
 ## Uruchamianie
 
+Skompiluj projekt:
+
+```shell
 mvn clean compile
+```
 
-### Uruchamianie serwera
+Uruchom serwer w pierwszym terminalu:
+
+```shell
 mvn exec:java -Pserver
+```
 
-### Uruchamianie klienta
-mvn exec:java -Ppanel
+Serwer i klient używają portu `5000`; klient domyślnie łączy się z `localhost`.
 
-## Użyte technologie
+W osobnym terminalu uruchom klienta graficznego:
 
-- Java  
-- Maven  
-- Junit
-- JavaDoc
-- Spring Framework
+```shell
+mvn javafx:run
+```
+
+Dla gry między dwoma osobami uruchom drugiego klienta w kolejnym terminalu.
+Można również wybrać grę z botem z poziomu interfejsu.
+
+## Przebieg gry
+
+Kamień stawia się przez kliknięcie przecięcia linii planszy. Przyciski pozwalają
+spasować lub poddać partię. Po dwóch kolejnych pasach gra przechodzi do
+uzgadniania wyniku: kliknięciem zaznacza się martwe grupy, a przyciskiem
+**Accept** zatwierdza stan planszy. Akceptacja obu graczy kończy punktowanie.
+Przycisk **Continue** pozwala wrócić do gry. Zapisane partie można odtwarzać,
+podając identyfikator gry w interfejsie.
+
+## Testy i dokumentacja
+
+```shell
+mvn clean verify
+mvn javadoc:javadoc
+```
+
+Testy korzystają z JUnit 4 i Mockito. Testy JavaFX wymagają dostępnego ekranu;
+na Linuksie bez środowiska graficznego można uruchomić je przez Xvfb:
+
+```shell
+xvfb-run -a mvn clean verify
+```
+
+Wygenerowany JavaDoc trafia do `target/site/apidocs/`. Dokumentacja wynikowa,
+pliki kompilacji i lokalne ustawienia IDE są pomijane przez Git.
+
+## Struktura projektu
+
+| Katalog w `src/main/java/pl/edu/go/` | Odpowiedzialność |
+| --- | --- |
+| `client/` | JavaFX i komunikacja z serwerem |
+| `model/` | plansza, ruchy, zasady i punktacja |
+| `server/bot/` | strategie bota |
+| `server/commandInterfaces/` | obsługa komend gry |
+| `server/networkInterfaces/` | interfejsy komunikacji |
+| `server/persistence/` | encje, repozytoria i zapis partii |
+| `server/replay/` | odtwarzanie gier |
+
+Konfiguracja i styl JavaFX znajdują się w `src/main/resources/`, a testy
+w `src/test/java/`. Projekt korzysta z JavaFX, Spring Boot,
+Spring Data JPA/Hibernate oraz sterownika MariaDB.
