@@ -1,6 +1,7 @@
 package pl.edu.go.server.commandInterfaces;
 
 import org.junit.*;
+import org.mockito.MockedStatic;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
@@ -9,6 +10,9 @@ import pl.edu.go.server.GameSession;
 import pl.edu.go.server.networkInterfaces.ClientConnection;
 import pl.edu.go.model.*;
 import pl.edu.go.model.TerritoryCalculator.GameResult;
+import pl.edu.go.server.persistence.PersistenceApplication;
+import pl.edu.go.server.persistence.entity.GameEntity;
+import pl.edu.go.server.persistence.service.GamePersistenceService;
 
 public class AcceptCommandTest {
 
@@ -51,23 +55,27 @@ public class AcceptCommandTest {
     }
 
 
-   @Test
-public void shouldEndGameWhenBothAccepted() {
-    when(game.getStatus()).thenReturn(GameState.Status.STOPPED);
-    when(game.accept(Color.BLACK)).thenReturn(true);
+    @Test
+    public void shouldEndGameWhenBothAccepted() {
+        when(game.getStatus()).thenReturn(GameState.Status.STOPPED);
+        when(game.accept(Color.BLACK)).thenReturn(true);
+        when(game.getFinalResult()).thenReturn(new GameResult(10.0, 8.5, 6.5, "BLACK"));
+        GameEntity entity = mock(GameEntity.class);
+        when(session.getGameEntity()).thenReturn(entity);
+        GamePersistenceService persistence = mock(GamePersistenceService.class);
 
-    GameResult resultMock = mock(GameResult.class);
-    when(resultMock.blackScore()).thenReturn(10.0);
-    when(resultMock.whiteScore()).thenReturn(8.5);
-    when(resultMock.winner()).thenReturn("BLACK");   // ✅ POPRAWKA
-    when(game.getFinalResult()).thenReturn(resultMock);
+        try (MockedStatic<PersistenceApplication> application = mockStatic(PersistenceApplication.class)) {
+            application.when(() -> PersistenceApplication.getBean(GamePersistenceService.class))
+                    .thenReturn(persistence);
+            boolean result = command.execute(new String[]{}, session, sender);
 
-    boolean result = command.execute(new String[]{}, session, sender);
-
-    assertTrue(result);
-    verify(game).confirmEndGame();
-    verify(session).sendToBoth("GAME_END 10.0 8.5 BLACK");
-    verify(session).endSession();
-}
+            assertTrue(result);
+            verify(game).confirmEndGame();
+            verify(session).sendToBoth("GAME_END 10.0 8.5 BLACK");
+            verify(persistence).finishGame(entity, "BLACK");
+            // The connection remains available for replaying the saved game.
+            verify(session, never()).endSession();
+        }
+    }
 
 }

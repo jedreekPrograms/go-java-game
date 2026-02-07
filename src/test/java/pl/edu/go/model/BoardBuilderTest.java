@@ -7,11 +7,11 @@ import static org.junit.Assert.*;
 public class BoardBuilderTest {
 
     @Test
-    public void build_defaultSize_is19() {
+    public void build_defaultSize_is9() {
         Board board = new BoardBuilder().build();
 
         assertNotNull(board);
-        assertEquals(19, board.getSize());
+        assertEquals(9, board.getSize());
     }
 
     @Test

@@ -1,88 +1,80 @@
 package pl.edu.go.client;
 
 import javafx.application.Platform;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Testy stabilności klasy GoBoardDemo.
- *
- * Testujemy WYŁĄCZNIE:
- * - reakcję na komunikaty serwera
- *
- * NIE testujemy:
- * - start(Stage)
- * - Canvas
- * - rysowania
- */
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+/** Tests server message handling without opening a window or a network connection. */
 public class GoBoardDemoTest {
 
-    private static boolean fxStarted = false;
     private GoBoardDemo ui;
 
     @BeforeClass
     public static void initJavaFX() {
-        if (!fxStarted) {
-            Platform.startup(() -> {});
-            fxStarted = true;
-        }
+        Platform.startup(() -> {});
     }
 
     @Before
-    public void setUp() {
-        ui = new GoBoardDemo();
-
-        // Minimalna inicjalizacja pól używanych w handleServerMessage
-        initUiFields();
+    public void setUp() throws Exception {
+        runFx(() -> {
+            ui = new GoBoardDemo();
+            ui.turnLabel = new Label();
+            ui.colorLabel = new Label();
+            ui.passLabel = new Label();
+            ui.acceptButton = new Button();
+            ui.continueButton = new Button();
+            ui.playGameStoryButton = new Button();
+            ui.botButton = new Button();
+            ui.replayId = new TextField();
+            ui.myCapturedLabel = new Label();
+            ui.opponentCapturedLabel = new Label();
+            ui.handleServerMessage("START BLACK");
+        });
+        runFx(() -> {});
     }
 
-    private void initUiFields() {
+    @Test
+    public void handleServerMessage_START_updatesPlayerColor() throws Exception {
+        runFx(() -> ui.handleServerMessage("START BLACK"));
+        runFx(() -> assertEquals("Your Color: Czarny", ui.colorLabel.getText()));
+    }
+
+    @Test
+    public void handleServerMessage_PASS_updatesTurn() throws Exception {
+        runFx(() -> ui.handleServerMessage("PASS BLACK"));
+        runFx(() -> assertEquals("Opponent's Turn", ui.turnLabel.getText()));
+    }
+
+    @Test
+    public void handleServerMessage_GAME_END_enablesReplayAndShowsScore() throws Exception {
+        runFx(() -> ui.handleServerMessage("GAME_END 10 5 BLACK"));
         runFx(() -> {
-            ui.turnLabel = new javafx.scene.control.Label();
-            ui.colorLabel = new javafx.scene.control.Label();
-            ui.passLabel = new javafx.scene.control.Label();
-            ui.acceptButton = new javafx.scene.control.Button();
-            ui.continueButton = new javafx.scene.control.Button();
-            ui.myCapturedLabel = new javafx.scene.control.Label();
-            ui.opponentCapturedLabel = new javafx.scene.control.Label();
+            assertFalse(ui.playGameStoryButton.isDisabled());
+            assertFalse(ui.replayId.isDisabled());
+            assertEquals("You: 10", ui.myCapturedLabel.getText());
+            assertEquals("Opponent: 5", ui.opponentCapturedLabel.getText());
         });
     }
 
-    // =======================
-    // TESTY
-    // =======================
-
     @Test
-    public void handleServerMessage_START_doesNotCrash() {
-        ui.handleServerMessage("START BLACK");
+    public void handleServerMessage_RESIGN_finishesDisplay() throws Exception {
+        runFx(() -> ui.handleServerMessage("RESIGN WHITE"));
+        runFx(() -> assertEquals("Game Over", ui.turnLabel.getText()));
     }
 
-
-
-    @Test
-    public void handleServerMessage_PASS_doesNotCrash() {
-        ui.handleServerMessage("PASS BLACK");
-    }
-
-    @Test
-    public void handleServerMessage_GAME_END_doesNotCrash() {
-        ui.handleServerMessage("GAME_END 10 5 BLACK");
-    }
-
-    @Test
-    public void handleServerMessage_RESIGN_doesNotCrash() {
-        ui.handleServerMessage("RESIGN WHITE");
-    }
-
-    // =======================
-    // POMOCNICZE
-    // =======================
-
-    private void runFx(Runnable r) {
-        try {
-            Platform.runLater(r);
-            Thread.sleep(30);
-        } catch (InterruptedException ignored) {}
+    private static void runFx(Runnable action) throws Exception {
+        FutureTask<Void> task = new FutureTask<>(action, null);
+        Platform.runLater(task);
+        task.get(10, TimeUnit.SECONDS);
     }
 }
