@@ -1,106 +1,95 @@
-# Gra w Go
+# Go — Java Client–Server Game
 
-Gra Go w architekturze klient–serwer, napisana w Javie 21. Klient JavaFX
-komunikuje się z serwerem przez TCP. Serwer kojarzy graczy w pary, obsługuje
-wiele partii jednocześnie i pozwala rozpocząć grę z botem.
+A networked Go game built with Java 21. A JavaFX client communicates with a TCP matchmaking server; the server manages concurrent games, a heuristic opponent, persistence and replay.
 
-## Możliwości
+**Scope:** a university/team project demonstrating Java networking, object-oriented design, game rules, graph traversal and automated tests. It is separate from the Go programming language.
 
-- Plansza 9 × 9, naprzemienne ruchy oraz bicie połączonych grup kamieni.
-- Sprawdzanie oddechów, zakaz samobójstwa i reguła ko.
-- Pasowanie, poddanie partii i uzgadnianie martwych grup po dwóch pasach.
-- Punktacja uwzględniająca terytorium, jeńców, martwe grupy i komi 6,5 pkt.
-- Bot dobierający ruchy heurystycznie.
-- Zapis partii w MariaDB oraz odtwarzanie zapisanej gry po jej identyfikatorze.
+## Features
 
-## Wymagania
+- A 9 × 9 board, alternating turns, connected stone groups and captures.
+- Liberty calculation, suicide prevention and ko checking.
+- Pass, resignation and scoring after two consecutive passes.
+- Dead-group agreement, territory, prisoners and 6.5-point komi.
+- Multiplayer matchmaking and a server-side heuristic bot.
+- MariaDB-backed game records and replay by game ID.
 
-- JDK 21 i Maven.
-- Działająca MariaDB do uruchomienia serwera i zapisu partii.
-- Środowisko graficzne do klienta JavaFX i testów interfejsu.
+## Technology
 
-JavaFX jest pobierany przez Maven — nie trzeba wskazywać lokalnego katalogu SDK.
-
-## Konfiguracja bazy
-
-Domyślna konfiguracja lokalna znajduje się w
-`src/main/resources/application.properties`:
-
-| Ustawienie | Wartość lokalna |
+| Area | Stack |
 | --- | --- |
-| Adres | `jdbc:mariadb://localhost:3306/go_game` |
-| Użytkownik | `go_user` |
-| Hasło przykładowe | `go_pass` |
+| Application | Java 21 |
+| Client | JavaFX |
+| Server | TCP sockets and per-client handling |
+| Persistence | Spring Boot, JPA/Hibernate, MariaDB |
+| Build and tests | Maven, JUnit 4, Mockito |
+| Documentation | JavaDoc |
 
-Przed uruchomieniem serwera utwórz bazę `go_game` oraz użytkownika z dostępem
-do tej bazy. Hibernate tworzy lub aktualizuje tabele przy starcie.
-Konfigurację można nadpisać zmiennymi środowiskowymi Springa:
-`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` i
-`SPRING_DATASOURCE_PASSWORD`. Własnych haseł nie zapisuj w repozytorium.
+## Run locally
 
-## Uruchamianie
+Requirements: JDK 21, Maven, MariaDB and a graphical environment. Maven downloads JavaFX; a manually installed JavaFX SDK is not required.
 
-Skompiluj projekt:
+### 1. Configure MariaDB
+
+Create the `go_game` database and a user with access to it. The checked-in local example is:
+
+| Setting | Example |
+| --- | --- |
+| URL | `jdbc:mariadb://localhost:3306/go_game` |
+| Username | `go_user` |
+| Example password | `go_pass` |
+
+Override these with `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` for your own environment. Hibernate currently creates or updates the tables on startup.
+
+### 2. Compile and start the server
+
+From the repository root:
 
 ```shell
 mvn clean compile
-```
-
-Uruchom serwer w pierwszym terminalu:
-
-```shell
 mvn exec:java -Pserver
 ```
 
-Serwer i klient używają portu `5000`; klient domyślnie łączy się z `localhost`.
+### 3. Start the graphical client
 
-W osobnym terminalu uruchom klienta graficznego:
+In another terminal:
 
 ```shell
 mvn javafx:run
 ```
 
-Dla gry między dwoma osobami uruchom drugiego klienta w kolejnym terminalu.
-Można również wybrać grę z botem z poziomu interfejsu.
+Start a second client for multiplayer, or select the bot from the interface. The current client connects to `localhost:5000`.
 
-## Przebieg gry
+## Playing
 
-Kamień stawia się przez kliknięcie przecięcia linii planszy. Przyciski pozwalają
-spasować lub poddać partię. Po dwóch kolejnych pasach gra przechodzi do
-uzgadniania wyniku: kliknięciem zaznacza się martwe grupy, a przyciskiem
-**Accept** zatwierdza stan planszy. Akceptacja obu graczy kończy punktowanie.
-Przycisk **Continue** pozwala wrócić do gry. Zapisane partie można odtwarzać,
-podając identyfikator gry w interfejsie.
+Click a board intersection to place a stone. **Pass** skips a turn and **Resign** ends the player's participation. Two consecutive passes enter scoring: mark dead groups, then both players choose **Accept**. **Continue** returns to play if the position is disputed. The interface also supports loading a stored game by ID for replay.
 
-## Testy i dokumentacja
+## Tests and JavaDoc
 
 ```shell
 mvn clean verify
 mvn javadoc:javadoc
 ```
 
-Testy korzystają z JUnit 4 i Mockito. Testy JavaFX wymagają dostępnego ekranu;
-na Linuksie bez środowiska graficznego można uruchomić je przez Xvfb:
+The current suite contains 55 tests. JavaFX tests need a display; on a headless Linux machine:
 
 ```shell
 xvfb-run -a mvn clean verify
 ```
 
-Wygenerowany JavaDoc trafia do `target/site/apidocs/`. Dokumentacja wynikowa,
-pliki kompilacji i lokalne ustawienia IDE są pomijane przez Git.
+JavaDoc is generated under `target/site/apidocs/`. Generated documentation, build output and local IDE settings are excluded from version control.
 
-## Struktura projektu
+## Read the code
 
-| Katalog w `src/main/java/pl/edu/go/` | Odpowiedzialność |
+Paths below are relative to `src/main/java/pl/edu/go/`:
+
+| Package | Responsibility |
 | --- | --- |
-| `client/` | JavaFX i komunikacja z serwerem |
-| `model/` | plansza, ruchy, zasady i punktacja |
-| `server/bot/` | strategie bota |
-| `server/commandInterfaces/` | obsługa komend gry |
-| `server/networkInterfaces/` | interfejsy komunikacji |
-| `server/persistence/` | encje, repozytoria i zapis partii |
-| `server/replay/` | odtwarzanie gier |
+| [model](src/main/java/pl/edu/go/model/) | Board state, legal moves, groups and scoring |
+| [client](src/main/java/pl/edu/go/client/) | JavaFX interface and server communication |
+| [server](src/main/java/pl/edu/go/server/) | Client handling and game sessions |
+| [server/bot](src/main/java/pl/edu/go/server/bot/) | Bot strategies |
+| [server/commandInterfaces](src/main/java/pl/edu/go/server/commandInterfaces/) | Protocol commands |
+| [server/persistence](src/main/java/pl/edu/go/server/persistence/) | Game and move storage |
+| [server/replay](src/main/java/pl/edu/go/server/replay/) | Saved-game playback |
 
-Konfiguracja i styl JavaFX znajdują się w `src/main/resources/`, a testy
-w `src/test/java/`. Projekt korzysta z JavaFX, Spring Boot,
-Spring Data JPA/Hibernate oraz sterownika MariaDB.
+Interesting starting points include group/liberty traversal in the board model, territory scoring and the separation between transport commands and game state. Contributions from the team are recorded in Git history.
